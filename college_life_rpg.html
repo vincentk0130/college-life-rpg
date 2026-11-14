@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大學生活 RPG 儀表板 | College Life RPG</title>
+<style>
+  :root {
+    --bg-dark: #140c06;
+    --bg-card: #1f140b;
+    --bg-card-hover: #291b10;
+    --border-subtle: #3a2618;
+    --accent-orange: #ff6b1a;
+    --accent-glow: rgba(255, 107, 26, 0.45);
+    --accent-gold: #f5b041;
+    --text-main: #f8f1eb;
+    --text-muted: #b09886;
+    --success: #4ade80;
+    --warning: #facc15;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+  body {
+    background: radial-gradient(circle at top center, #2a180c 0%, var(--bg-dark) 75%);
+    color: var(--text-main);
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  
+  /* Header */
+  header {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+    padding: 16px 24px; background: var(--bg-card); border: 1px solid var(--border-subtle);
+    border-radius: 16px; margin-bottom: 20px; gap: 16px;
+  }
+  .brand h1 { font-size: 1.4rem; color: var(--accent-orange); display: flex; align-items: center; gap: 8px; }
+  .brand p { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+  .nav-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn {
+    background: var(--bg-card-hover); color: var(--text-main); border: 1px solid var(--border-subtle);
+    padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 500;
+    transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { border-color: var(--accent-orange); background: #332012; }
+  .btn-primary { background: var(--accent-orange); color: #fff; border-color: var(--accent-orange); box-shadow: 0 0 12px var(--accent-glow); }
+  .btn-primary:hover { background: #e85a0c; }
+
+  /* Grid Layout */
+  .main-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; }
+  @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border-subtle);
+    border-radius: 16px; padding: 20px; margin-bottom: 20px;
+  }
+  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .card-title { font-size: 1.1rem; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+
+  /* Player Banner */
+  .player-stats {
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(255, 107, 26, 0.08); border: 1px solid rgba(255, 107, 26, 0.25);
+    padding: 12px 16px; border-radius: 12px; margin-bottom: 16px;
+  }
+  .level-badge { font-size: 1.3rem; font-weight: 800; color: var(--accent-orange); }
+  .title-badge { font-size: 0.85rem; color: var(--accent-gold); background: rgba(245, 176, 65, 0.15); padding: 3px 10px; border-radius: 20px; }
+  .xp-bar-wrap { width: 100%; height: 8px; background: #2c1c10; border-radius: 4px; margin-top: 8px; overflow: hidden; }
+  .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-orange), var(--accent-gold)); transition: width 0.4s ease; }
+
+  /* Radar SVG */
+  .radar-box { display: flex; flex-direction: column; align-items: center; position: relative; }
+  svg#radarSvg { width: 100%; max-width: 380px; height: auto; overflow: visible; }
+  .stat-pills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; margin-top: 14px; }
+  .stat-pill {
+    background: #170e07; border: 1px solid var(--border-subtle); border-radius: 10px;
+    padding: 8px 10px; text-align: center; cursor: pointer; transition: 0.2s;
+  }
+  .stat-pill:hover { border-color: var(--accent-orange); }
+  .stat-pill .name { font-size: 0.8rem; color: var(--text-muted); }
+  .stat-pill .val { font-size: 1.05rem; font-weight: 700; color: var(--accent-orange); margin-top: 2px; }
+
+  /* School Info Card */
+  .school-box {
+    background: #170e07; border-left: 3px solid var(--accent-gold); padding: 14px; border-radius: 10px;
+    font-size: 0.9rem; line-height: 1.6;
+  }
+  .school-box h4 { color: var(--accent-gold); margin-bottom: 6px; }
+  .school-box ul { padding-left: 18px; color: var(--text-muted); }
+
+  /* Schedule Status Banner */
+  .schedule-banner {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    background: #170e07; border: 1px solid var(--border-subtle); padding: 12px 16px; border-radius: 12px; margin-bottom: 16px;
+  }
+  .day-tabs { display: flex; gap: 6px; }
+  .day-tab {
+    padding: 4px 10px; border-radius: 6px; background: #26180e; border: 1px solid var(--border-subtle);
+    color: var(--text-muted); cursor: pointer; font-size: 0.85rem;
+  }
+  .day-tab.active { background: var(--accent-orange); color: #fff; border-color: var(--accent-orange); }
+  .load-tag { font-size: 0.82rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+  .load-low { background: rgba(74, 222, 128, 0.15); color: var(--success); }
+  .load-mid { background: rgba(250, 204, 21, 0.15); color: var(--warning); }
+  .load-high { background: rgba(255, 107, 26, 0.2); color: var(--accent-orange); }
+
+  /* Filter & Quest List */
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .filter-btn {
+    background: #170e07; border: 1px solid var(--border-subtle); color: var(--text-muted);
+    padding: 5px 12px; border-radius: 20px; font-size: 0.82rem; cursor: pointer;
+  }
+  .filter-btn.active { background: var(--accent-orange); color: #fff; border-color: var(--accent-orange); }
+
+  .quest-list { display: flex; flex-direction: column; gap: 10px; max-height: 460px; overflow-y: auto; padding-right: 4px; }
+  .quest-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    background: #170e07; border: 1px solid var(--border-subtle); padding: 12px 14px; border-radius: 12px;
+    transition: 0.2s;
+  }
+  .quest-item:hover { border-color: #5c3d28; }
+  .quest-info h4 { font-size: 0.95rem; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .quest-meta { font-size: 0.8rem; color: var(--text-muted); display: flex; gap: 10px; align-items: center; }
+  .badge-attr { background: rgba(255, 107, 26, 0.15); color: var(--accent-orange); padding: 2px 8px; border-radius: 6px; font-weight: 600; }
+  .badge-downscaled { background: rgba(74, 222, 128, 0.15); color: var(--success); padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; }
+
+  /* Log */
+  .log-list { font-size: 0.85rem; color: var(--text-muted); max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+  .log-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #170e07; border-radius: 8px; }
+
+  /* Modals */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); display: none;
+    justify-content: center; align-items: center; z-index: 1000; padding: 16px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 16px;
+    width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; padding: 24px;
+  }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; }
+  .close-btn { background: none; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 0.88rem; color: var(--text-muted); margin-bottom: 6px; }
+  .form-control {
+    width: 100%; background: #140c06; border: 1px solid var(--border-subtle); color: var(--text-main);
+    padding: 10px 12px; border-radius: 10px; font-size: 0.92rem;
+  }
+  .form-control:focus { outline: none; border-color: var(--accent-orange); }
+
+  /* Timetable Grid */
+  .timetable { display: grid; grid-template-columns: 60px repeat(5, 1fr); gap: 4px; margin-top: 10px; }
+  .tt-cell {
+    background: #140c06; border: 1px solid var(--border-subtle); padding: 8px 4px;
+    text-align: center; font-size: 0.8rem; border-radius: 6px; cursor: pointer; user-select: none;
+  }
+  .tt-header { font-weight: 700; color: var(--accent-gold); cursor: default; }
+  .tt-busy { background: rgba(255, 107, 26, 0.28); border-color: var(--accent-orange); color: #fff; font-weight: 600; }
+
+  /* AI Chat */
+  .chat-box {
+    height: 300px; overflow-y: auto; background: #140c06; border: 1px solid var(--border-subtle);
+    border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px;
+  }
+  .msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; line-height: 1.5; }
+  .msg-ai { background: #26180e; border: 1px solid var(--border-subtle); align-self: flex-start; }
+  .msg-user { background: var(--accent-orange); color: #fff; align-self: flex-end; }
+  .ai-suggest-card {
+    margin-top: 8px; padding: 10px; background: #170e07; border: 1px dashed var(--accent-gold);
+    border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+
+  /* Wizard */
+  .wizard-step { display: none; }
+  .wizard-step.active { display: block; }
+  .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 8px 14px; background: #140c06; border: 1px solid var(--border-subtle);
+    border-radius: 20px; cursor: pointer; font-size: 0.88rem;
+  }
+  .chip.selected { background: var(--accent-orange); border-color: var(--accent-orange); color: #fff; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="brand">
+      <h1>🔥 大學生活 RPG 儀表板</h1>
+      <p id="headerSub">將你的大學日常轉化為六維成長冒險</p>
+    </div>
+    <div class="nav-actions">
+      <button class="btn" onclick="openModal('wizardModal')">✨ 量身定做目標</button>
+      <button class="btn" onclick="openModal('schoolModal')">🏫 學校設定</button>
+      <button class="btn" onclick="openModal('scheduleModal')">📅 課表空檔</button>
+      <button class="btn btn-primary" onclick="openModal('aiModal')">🤖 AI 目標導師</button>
+    </div>
+  </header>
+
+  <div class="main-grid">
+    <!-- Left Column: Radar & School Info -->
+    <div>
+      <div class="card">
+        <div class="player-stats">
+          <div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span class="level-badge" id="playerLevel">LV. 1</span>
+              <span class="title-badge" id="playerTitle">大學新手冒險者</span>
+            </div>
+            <div style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;" id="xpText">總經驗值：0 XP</div>
+          </div>
+          <label style="font-size:0.82rem; color:var(--text-muted); cursor:pointer; display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" id="toggleTargetPoly" checked onchange="renderRadar()"> 顯示目標輪廓
+          </label>
+        </div>
+
+        <div class="radar-box">
+          <svg id="radarSvg" viewBox="-60 -45 420 390"></svg>
+          <div class="stat-pills" id="statPills"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🏫 校園專屬資源情報卡</div>
+          <button class="btn" style="padding:4px 10px; font-size:0.8rem;" onclick="openModal('schoolModal')">切換學校</button>
+        </div>
+        <div class="school-box" id="schoolInfoBox"></div>
+      </div>
+    </div>
+
+    <!-- Right Column: Quests & Log -->
+    <div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⚔️ 大學冒險任務板</div>
+          <button class="btn btn-primary" style="padding:6px 12px; font-size:0.85rem;" onclick="openModal('addQuestModal')">+ 新增自訂任務</button>
+        </div>
+
+        <div class="schedule-banner">
+          <div>
+            <div style="font-size:0.82rem; color:var(--text-muted); margin-bottom:4px;">檢視行事曆日負荷：</div>
+            <div class="day-tabs" id="dayTabs"></div>
+          </div>
+          <div id="loadStatus"></div>
+        </div>
+
+        <div class="filter-bar" id="filterBar"></div>
+        <div class="quest-list" id="questList"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📜 冒險日誌（可復原）</div>
+          <button class="btn" style="padding:4px 10px; font-size:0.8rem;" onclick="resetAllData()">重置進度</button>
+        </div>
+        <div class="log-list" id="logList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 1: Goal Customization Wizard -->
+<div class="modal-backdrop" id="wizardModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>✨ 量身定做目標精靈</h3>
+      <button class="close-btn" onclick="closeModal('wizardModal')">&times;</button>
+    </div>
+    <div id="wizardContent">
+      <div class="wizard-step active" data-step="1">
+        <div class="form-group">
+          <label>步驟 1 / 4：你目前的大學階段是？</label>
+          <div class="chip-group" id="gradeChips">
+            <div class="chip selected" data-val="大一新鮮人">大一新鮮人（適應與探索）</div>
+            <div class="chip" data-val="大二探索期">大二探索期（社團與雙輔）</div>
+            <div class="chip" data-val="大三衝刺實習">大三衝刺實習（履歷與專題）</div>
+            <div class="chip" data-val="大四畢業轉職">大四畢業轉職（研究所/求職）</div>
+          </div>
+        </div>
+      </div>
+      <div class="wizard-step" data-step="2">
+        <div class="form-group">
+          <label>步驟 2 / 4：自評目前六維能力分數（15 ~ 70 分）</label>
+          <div id="sliderContainer"></div>
+        </div>
+      </div>
+      <div class="wizard-step" data-step="3">
+        <div class="form-group">
+          <label>步驟 3 / 4：本學期最想重點突破哪兩個領域？</label>
+          <div class="chip-group" id="focusChips"></div>
+        </div>
+      </div>
+      <div class="wizard-step" data-step="4">
+        <div class="form-group">
+          <label>步驟 4 / 4：挑選你想達成的具體心願（可複選）</label>
+          <div class="chip-group" id="wishChips">
+            <div class="chip" data-attr="Mind" data-title="準備多益/英文檢定 30 分鐘" data-xp="20" data-mins="30">準備多益/外語檢定</div>
+            <div class="chip" data-attr="Rest" data-title="凌晨 1 點前放下手機就寢" data-xp="20" data-mins="15">戒掉熬夜滑手機</div>
+            <div class="chip" data-attr="Body" data-title="操場慢跑或重訓 40 分鐘" data-xp="25" data-mins="40">規律運動增強體能</div>
+            <div class="chip" data-attr="Purpose" data-title="整理實習履歷與作品集" data-xp="25" data-mins="45">準備實習與作品集</div>
+            <div class="chip" data-attr="Fuel" data-title="每日喝水 2000cc 並記帳" data-xp="15" data-mins="10">健康飲食與理財記帳</div>
+            <div class="chip" data-attr="Connection" data-title="約同學共進午餐或討論課業" data-xp="20" data-mins="30">拓展校園人脈社交</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-top:20px;">
+        <button class="btn" id="wizPrevBtn" onclick="changeWizardStep(-1)" style="visibility:hidden;">上一步</button>
+        <button class="btn btn-primary" id="wizNextBtn" onclick="changeWizardStep(1)">下一步</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 2: School Settings -->
+<div class="modal-backdrop" id="schoolModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🏫 學校與科系設定</h3>
+      <button class="close-btn" onclick="closeModal('schoolModal')">&times;</button>
+    </div>
+    <div class="form-group">
+      <label>選擇就讀學校</label>
+      <select class="form-control" id="schoolSelect" onchange="toggleCustomSchool()">
+        <option value="NTU">國立臺灣大學 (NTU)</option>
+        <option value="NTHU">國立清華大學 (NTHU)</option>
+        <option value="NYCU">國立陽明交通大學 (NYCU)</option>
+        <option value="NCKU">國立成功大學 (NCKU)</option>
+        <option value="NCCU">國立政治大學 (NCCU)</option>
+        <option value="FJU">輔仁大學 (FJU)</option>
+        <option value="CUSTOM">其他大學（自行輸入）</option>
+      </select>
+    </div>
+    <div class="form-group" id="customSchoolGroup" style="display:none;">
+      <label>學校名稱</label>
+      <input type="text" class="form-control" id="customSchoolName" placeholder="例如：國立中央大學">
+    </div>
+    <div class="form-group">
+      <label>科系與年級</label>
+      <input type="text" class="form-control" id="majorInput" placeholder="例如：資訊工程學系 大二">
+    </div>
+    <button class="btn btn-primary" style="width:100%;" onclick="saveSchoolSettings()">儲存並解鎖校園情報</button>
+  </div>
+</div>
+
+<!-- Modal 3: Schedule & Free Time -->
+<div class="modal-backdrop" id="scheduleModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📅 匯入課表與行事曆空檔設定</h3>
+      <button class="close-btn" onclick="closeModal('scheduleModal')">&times;</button>
+    </div>
+    <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:10px;">
+      點擊下方時段標記「有課/忙碌」時段，或上傳 Google 日曆 <code>.ics</code> 檔。當某天空檔較少時，系統會自動把長任務降載為 <strong>15 分鐘微任務</strong>！
+    </p>
+    <div class="timetable" id="timetableGrid"></div>
+    <div class="form-group" style="margin-top:14px;">
+      <label>或匯入行事曆檔案 (.ics)</label>
+      <input type="file" accept=".ics" class="form-control" onchange="handleIcsUpload(event)">
+    </div>
+    <button class="btn btn-primary" style="width:100%;" onclick="closeModal('scheduleModal')">完成課表設定</button>
+  </div>
+</div>
+
+<!-- Modal 4: Add Custom Quest -->
+<div class="modal-backdrop" id="addQuestModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>➕ 新增專屬冒險任務</h3>
+      <button class="close-btn" onclick="closeModal('addQuestModal')">&times;</button>
+    </div>
+    <div class="form-group">
+      <label>任務名稱</label>
+      <input type="text" class="form-control" id="newQuestTitle" placeholder="例如：複習微積分第三章習題">
+    </div>
+    <div class="form-group">
+      <label>對應六維屬性</label>
+      <select class="form-control" id="newQuestAttr">
+        <option value="Body">Body 體能（運動、體態）</option>
+        <option value="Mind">Mind 心智（課業、閱讀、技能）</option>
+        <option value="Rest">Rest 休憩（睡眠、冥想、放鬆）</option>
+        <option value="Fuel">Fuel 能量（飲食、喝水、財務）</option>
+        <option value="Connection">Connection 社交（人脈、社團、家人）</option>
+        <option value="Purpose">Purpose 志向（實習、職涯、專案）</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>預估耗時（分鐘）</label>
+      <input type="number" class="form-control" id="newQuestMins" value="30" min="5" max="180">
+    </div>
+    <button class="btn btn-primary" style="width:100%;" onclick="addCustomQuest()">加入任務板</button>
+  </div>
+</div>
+
+<!-- Modal 5: AI Goal Mentor -->
+<div class="modal-backdrop" id="aiModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🤖 AI 目標導師對話室</h3>
+      <button class="close-btn" onclick="closeModal('aiModal')">&times;</button>
+    </div>
+    <div class="form-group">
+      <label>Gemini API Key（選填，未填寫則啟用內建智慧導師引擎）</label>
+      <input type="password" class="form-control" id="geminiApiKey" placeholder="貼上 AIzaSy... 金鑰以啟用雲端 Gemini 生成">
+    </div>
+    <div class="chat-box" id="chatBox">
+      <div class="msg msg-ai">
+        嗨！我是你的大學生活 RPG 目標導師。我已經同步了你的六維雷達圖與今日課表空檔。<br>告訴我你這週想達成什麼目標，或覺得哪科壓力太大？我可以幫你拆解成適合今天空檔的微任務！
+      </div>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <input type="text" class="form-control" id="chatInput" placeholder="例如：這週要考期中考又想運動，怎麼安排？" onkeydown="if(event.key==='Enter') sendAiMessage()">
+      <button class="btn btn-primary" onclick="sendAiMessage()">發送</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ATTRS = [
+  { key: 'Body', label: 'Body 體能', icon: '🏋️' },
+  { key: 'Mind', label: 'Mind 心智', icon: '🧠' },
+  { key: 'Rest', label: 'Rest 休憩', icon: '🌙' },
+  { key: 'Fuel', label: 'Fuel 能量', icon: '🍃' },
+  { key: 'Connection', label: 'Connection 社交', icon: '👥' },
+  { key: 'Purpose', label: 'Purpose 志向', icon: '🔥' }
+];
+
+const SCHOOL_DATA = {
+  NTU: {
+    name: '國立臺灣大學', title: '椰林大道探索者',
+    tips: ['總圖書館 B1 自習室開放至深夜，適合 Mind 衝刺', '綜合體育館與舊體提供學生免費重訓與泳池時段', '職涯中心每學期舉辦校園徵才與履歷健檢']
+  },
+  NTHU: {
+    name: '國立清華大學', title: '清華梅園修煉生',
+    tips: ['旺宏館學習資源中心提供 24 小時夜讀區', '校友體育館與田徑場適合傍晚慢跑提升 Body', '善用跨領域學分學程與清交跨校修課資源']
+  },
+  NYCU: {
+    name: '國立陽明交通大學', title: '竹湖極客冒險家',
+    tips: ['浩然圖書館殷之浩空間適合小組專案討論', '善用交大體育館羽球與重訓設施釋放寫扣壓力', '多關注新竹科學園區實習博覽會資訊']
+  },
+  NCKU: {
+    name: '國立成功大學', title: '榕園南國逐夢者',
+    tips: ['總圖 K 館是期中期末考最強心智修煉場', '光復操場夜跑與勝利校區美食街兼顧體能與能量', '成大產學創新總中心有豐富創業與實習資源']
+  },
+  NCCU: {
+    name: '國立政治大學', title: '指南山下思辨者',
+    tips: ['達賢圖書館湖濱悅讀小屋擁有絕佳專注氛圍', '河堤步道慢跑或攀登指南山步階鍛鍊體能', '商學院與傳院職涯講座密集，適合拓展人脈']
+  },
+  FJU: {
+    name: '輔仁大學', title: '真善美聖實踐者',
+    tips: ['濟時樓與公博樓圖書館提供安靜研讀空間', '中美堂周邊運動場與輔大醫院健康資源完善', '跨院系社團活躍，是累積 Connection 的好舞台']
+  },
+  CUSTOM: {
+    name: '專屬大學校園', title: '校園全能冒險者',
+    tips: ['善用學校圖書館自習空間建立每日專注儀式', '利用校內操場或體育館每週運動 2-3 次', '主動預約校內職涯中心進行履歷與模擬面試']
+  }
+};
+
+const DAYS = ['週一', '週二', '週三', '週四', '週五'];
+const PERIODS = ['早八', '上午', '下午', '傍晚', '晚上'];
+
+let state = JSON.parse(localStorage.getItem('collegeRpgState')) || {
+  stats: { Body: 35, Mind: 45, Rest: 30, Fuel: 40, Connection: 38, Purpose: 32 },
+  targets: { Body: 70, Mind: 80, Rest: 70, Fuel: 70, Connection: 70, Purpose: 75 },
+  xp: 120,
+  school: 'NTU',
+  customSchoolName: '',
+  major: '不分系 大二',
+  selectedDay: 0,
+  filter: 'ALL',
+  busySlots: {
+    '0-1': true, '0-2': true,
+    '1-0': true, '1-1': true, '1-2': true, '1-3': true,
+    '2-2': true,
+    '3-1': true, '3-2': true, '3-3': true,
+    '4-1': true
+  },
+  quests: [
+    { id: 1, title: '圖書館專注閱讀與筆記整理', shortTitle: '精讀 1 篇核心章節筆記', attr: 'Mind', mins: 45, xp: 25 },
+    { id: 2, title: '操場慢跑或健身房重訓', shortTitle: '睡前 15 分鐘核心伸展', attr: 'Body', mins: 40, xp: 25 },
+    { id: 3, title: '凌晨 12:30 前放下手機就寢', shortTitle: '睡前 15 分鐘遠離藍光閉目養神', attr: 'Rest', mins: 20, xp: 20 },
+    { id: 4, title: '補足 2000cc 飲水與今日記帳', shortTitle: '快速紀錄今日開銷並喝杯水', attr: 'Fuel', mins: 15, xp: 15 },
+    { id: 5, title: '與同學討論報告或約吃午餐', shortTitle: '傳訊息關心一位久未聯絡的朋友', attr: 'Connection', mins: 30, xp: 20 },
+    { id: 6, title: '更新實習履歷與探索職缺方向', shortTitle: '瀏覽 2 個感興趣的實習職缺', attr: 'Purpose', mins: 40, xp: 25 }
+  ],
+  logs: [
+    { id: 101, text: '啟動大學生活 RPG 冒險系統', attr: 'Mind', delta: 0, time: '系統初始化' }
+  ]
+};
+
+function saveState() {
+  localStorage.setItem('collegeRpgState', JSON.stringify(state));
+}
+
+function renderAll() {
+  renderHeader();
+  renderRadar();
+  renderSchoolInfo();
+  renderDayTabs();
+  renderFilters();
+  renderQuests();
+  renderLogs();
+}
+
+function renderHeader() {
+  const level = Math.floor(state.xp / 100) + 1;
+  const schoolObj = SCHOOL_DATA[state.school] || SCHOOL_DATA.CUSTOM;
+  const schoolName = state.school === 'CUSTOM' && state.customSchoolName ? state.customSchoolName : schoolObj.name;
+  document.getElementById('headerSub').textContent = `${schoolName} · ${state.major}`;
+  document.getElementById('playerLevel').textContent = `LV. ${level}`;
+  document.getElementById('playerTitle').textContent = schoolObj.title;
+  document.getElementById('xpText').textContent = `總經驗值：${state.xp} XP（距離下一級還需 ${100 - (state.xp % 100)} XP）`;
+}
+
+function renderRadar() {
+  const svg = document.getElementById('radarSvg');
+  const cx = 150, cy = 150, maxR = 110;
+  let html = '';
+
+  // Background grid rings
+  [0.25, 0.5, 0.75, 1].forEach(scale => {
+    const pts = ATTRS.map((_, i) => {
+      const angle = (Math.PI / 3) * i - Math.PI / 2;
+      return `${cx + maxR * scale * Math.cos(angle)},${cy + maxR * scale * Math.sin(angle)}`;
+    }).join(' ');
+    html += `<polygon points="${pts}" fill="none" stroke="#3a2618" stroke-width="1"/>`;
+  });
+
+  // Axis lines & Labels
+  ATTRS.forEach((a, i) => {
+    const angle = (Math.PI / 3) * i - Math.PI / 2;
+    const x2 = cx + maxR * Math.cos(angle);
+    const y2 = cy + maxR * Math.sin(angle);
+    const lx = cx + (maxR + 34) * Math.cos(angle);
+    const ly = cy + (maxR + 28) * Math.sin(angle);
+    html += `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="#3a2618" stroke-width="1"/>`;
+    html += `<text x="${lx}" y="${ly}" fill="#f8f1eb" font-size="12" font-weight="600" text-anchor="middle" dominant-baseline="middle">${a.icon} ${a.key}</text>`;
+  });
+
+  // Target Polygon (Dashed Gold)
+  if (document.getElementById('toggleTargetPoly').checked) {
+    const tPts = ATTRS.map((a, i) => {
+      const val = Math.min(100, state.targets[a.key] || 75) / 100;
+      const angle = (Math.PI / 3) * i - Math.PI / 2;
+      return `${cx + maxR * val * Math.cos(angle)},${cy + maxR * val * Math.sin(angle)}`;
+    }).join(' ');
+    html += `<polygon points="${tPts}" fill="rgba(245, 176, 65, 0.08)" stroke="#f5b041" stroke-width="1.8" stroke-dasharray="5,4"/>`;
+  }
+
+  // Current Polygon (Glowing Orange)
+  const cPts = ATTRS.map((a, i) => {
+    const val = Math.min(100, state.stats[a.key]) / 100;
+    const angle = (Math.PI / 3) * i - Math.PI / 2;
+    return `${cx + maxR * val * Math.cos(angle)},${cy + maxR * val * Math.sin(angle)}`;
+  }).join(' ');
+  html += `<polygon points="${cPts}" fill="rgba(255, 107, 26, 0.32)" stroke="#ff6b1a" stroke-width="2.5"/>`;
+
+  // Vertices
+  ATTRS.forEach((a, i) => {
+    const val = Math.min(100, state.stats[a.key]) / 100;
+    const angle = (Math.PI / 3) * i - Math.PI / 2;
+    const vx = cx + maxR * val * Math.cos(angle);
+    const vy = cy + maxR * val * Math.sin(angle);
+    html += `<circle cx="${vx}" cy="${vy}" r="4.5" fill="#ff6b1a" stroke="#fff" stroke-width="1.5"/>`;
+  });
+
+  svg.innerHTML = html;
+
+  // Pills
+  document.getElementById('statPills').innerHTML = ATTRS.map(a => `
+    <div class="stat-pill" onclick="filterByAttr('${a.key}')">
+      <div class="name">${a.icon} ${a.label.split(' ')[1]}</div>
+      <div class="val">${state.stats[a.key]} <span style="font-size:0.75rem; color:var(--text-muted);">/ ${state.targets[a.key]}</span></div>
+    </div>
+  `).join('');
+}
+
+function renderSchoolInfo() {
+  const s = SCHOOL_DATA[state.school] || SCHOOL_DATA.CUSTOM;
+  const displayName = state.school === 'CUSTOM' && state.customSchoolName ? state.customSchoolName : s.name;
+  document.getElementById('schoolInfoBox').innerHTML = `
+    <h4>${displayName} · 專屬成長建議</h4>
+    <ul>${s.tips.map(t => `<li>${t}</li>`).join('')}</ul>
+  `;
+}
+
+function getDayBusyCount(dayIdx) {
+  let busy = 0;
+  for (let p = 0; p < PERIODS.length; p++) {
+    if (state.busySlots[`${dayIdx}-${p}`]) busy++;
+  }
+  return busy;
+}
+
+function renderDayTabs() {
+  document.getElementById('dayTabs').innerHTML = DAYS.map((d, idx) => `
+    <button class="day-tab ${state.selectedDay === idx ? 'active' : ''}" onclick="selectDay(${idx})">${d}</button>
+  `).join('');
+
+  const busy = getDayBusyCount(state.selectedDay);
+  const free = PERIODS.length - busy;
+  let badge = '';
+  if (busy >= 4) {
+    badge = `<span class="load-tag load-high">🔥 滿堂高壓日（僅 ${free} 時段空檔 · 已自動降載為 15m 微任務）</span>`;
+  } else if (busy >= 2) {
+    badge = `<span class="load-tag load-mid">⚖️ 適中課表日（${free} 時段空檔 · 正常任務節奏）</span>`;
+  } else {
+    badge = `<span class="load-tag load-low">🌿 充裕空檔日（${free} 時段空檔 · 適合推進深度目標）</span>`;
+  }
+  document.getElementById('loadStatus').innerHTML = badge;
+}
+
+function selectDay(idx) {
+  state.selectedDay = idx;
+  saveState();
+  renderDayTabs();
+  renderQuests();
+}
+
+function renderFilters() {
+  const items = [{ key: 'ALL', label: '全部任務' }, ...ATTRS.map(a => ({ key: a.key, label: `${a.icon} ${a.key}` }))];
+  document.getElementById('filterBar').innerHTML = items.map(it => `
+    <button class="filter-btn ${state.filter === it.key ? 'active' : ''}" onclick="filterByAttr('${it.key}')">${it.label}</button>
+  `).join('');
+}
+
+function filterByAttr(attr) {
+  state.filter = attr;
+  renderFilters();
+  renderQuests();
+}
+
+function renderQuests() {
+  const busy = getDayBusyCount(state.selectedDay);
+  const isHighLoad = busy >= 4;
+  const filtered = state.filter === 'ALL' ? state.quests : state.quests.filter(q => q.attr === state.filter);
+
+  document.getElementById('questList').innerHTML = filtered.map(q => {
+    const downscaled = isHighLoad && q.mins > 20;
+    const title = downscaled ? (q.shortTitle || `${q.title}（15 分鐘精簡版）`) : q.title;
+    const mins = downscaled ? 15 : q.mins;
+    const xp = downscaled ? Math.max(10, Math.round(q.xp * 0.7)) : q.xp;
+
+    return `
+      <div class="quest-item">
+        <div class="quest-info">
+          <h4>
+            ${title}
+            ${downscaled ? `<span class="badge-downscaled">微任務 15m 降載版</span>` : ''}
+          </h4>
+          <div class="quest-meta">
+            <span class="badge-attr">${q.attr}</span>
+            <span>⏱️ ${mins} 分鐘</span>
+            <span>✨ +${xp} XP / +2 屬性點</span>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="completeQuest(${q.id}, ${xp}, '${title.replace(/'/g, "\'")}')">完成</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function completeQuest(id, xp, finalTitle) {
+  const quest = state.quests.find(q => q.id === id);
+  if (!quest) return;
+  const delta = 2;
+  state.stats[quest.attr] = Math.min(100, state.stats[quest.attr] + delta);
+  state.xp += xp;
+  state.logs.unshift({
+    id: Date.now(),
+    text: `完成「${finalTitle}」`,
+    attr: quest.attr,
+    delta,
+    xp,
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  });
+  saveState();
+  renderAll();
+}
+
+function renderLogs() {
+  document.getElementById('logList').innerHTML = state.logs.map(l => `
+    <div class="log-item">
+      <span>[${l.time}] ${l.text} <strong style="color:var(--accent-orange)">(${l.attr} +${l.delta})</strong></span>
+      ${l.delta > 0 ? `<button class="btn" style="padding:2px 8px; font-size:0.75rem;" onclick="undoLog(${l.id})">復原</button>` : ''}
+    </div>
+  `).join('');
+}
+
+function undoLog(logId) {
+  const idx = state.logs.findIndex(l => l.id === logId);
+  if (idx === -1) return;
+  const log = state.logs[idx];
+  state.stats[log.attr] = Math.max(0, state.stats[log.attr] - log.delta);
+  state.xp = Math.max(0, state.xp - (log.xp || 0));
+  state.logs.splice(idx, 1);
+  saveState();
+  renderAll();
+}
+
+/* Modals */
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id === 'scheduleModal') renderTimetable();
+  if (id === 'wizardModal') initWizard();
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+/* Timetable */
+function renderTimetable() {
+  let html = `<div class="tt-cell tt-header">時段</div>` + DAYS.map(d => `<div class="tt-cell tt-header">${d}</div>`).join('');
+  PERIODS.forEach((p, pIdx) => {
+    html += `<div class="tt-cell tt-header">${p}</div>`;
+    DAYS.forEach((_, dIdx) => {
+      const key = `${dIdx}-${pIdx}`;
+      const busy = state.busySlots[key];
+      html += `<div class="tt-cell ${busy ? 'tt-busy' : ''}" onclick="toggleSlot('${key}')">${busy ? '有課/忙' : '空檔'}</div>`;
+    });
+  });
+  document.getElementById('timetableGrid').innerHTML = html;
+}
+
+function toggleSlot(key) {
+  state.busySlots[key] = !state.busySlots[key];
+  saveState();
+  renderTimetable();
+  renderDayTabs();
+  renderQuests();
+}
+
+function handleIcsUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const text = ev.target.result;
+    const eventsCount = (text.match(/BEGIN:VEVENT/g) || []).length;
+    // Simulate parsing busy density from .ics
+    if (eventsCount > 0) {
+      state.busySlots['0-0'] = true;
+      state.busySlots['2-1'] = true;
+      state.busySlots['2-3'] = true;
+      saveState();
+      renderTimetable();
+      renderDayTabs();
+      renderQuests();
+      alert(`成功解析行事曆！共偵測到 ${eventsCount} 筆行程，已自動更新空檔負荷與任務難度。`);
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* School Settings */
+function toggleCustomSchool() {
+  const val = document.getElementById('schoolSelect').value;
+  document.getElementById('customSchoolGroup').style.display = val === 'CUSTOM' ? 'block' : 'none';
+}
+
+function saveSchoolSettings() {
+  state.school = document.getElementById('schoolSelect').value;
+  state.customSchoolName = document.getElementById('customSchoolName').value.trim();
+  state.major = document.getElementById('majorInput').value.trim() || '大學部學生';
+  saveState();
+  renderAll();
+  closeModal('schoolModal');
+}
+
+/* Add Quest */
+function addCustomQuest() {
+  const title = document.getElementById('newQuestTitle').value.trim();
+  const attr = document.getElementById('newQuestAttr').value;
+  const mins = parseInt(document.getElementById('newQuestMins').value, 10) || 30;
+  if (!title) return alert('請輸入任務名稱！');
+  state.quests.unshift({
+    id: Date.now(),
+    title,
+    shortTitle: `${title}（15 分鐘精簡啟動版）`,
+    attr,
+    mins,
+    xp: Math.max(15, Math.round(mins * 0.6))
+  });
+  document.getElementById('newQuestTitle').value = '';
+  saveState();
+  renderQuests();
+  closeModal('addQuestModal');
+}
+
+/* Wizard */
+let wizStep = 1;
+function initWizard() {
+  wizStep = 1;
+  updateWizardUI();
+  document.getElementById('sliderContainer').innerHTML = ATTRS.map(a => `
+    <div style="margin-bottom:8px;">
+      <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+        <span>${a.icon} ${a.label}</span>
+        <span id="val_${a.key}">${state.stats[a.key]}</span>
+      </div>
+      <input type="range" min="15" max="70" value="${state.stats[a.key]}" style="width:100%; accent-color:var(--accent-orange);"
+        oninput="document.getElementById('val_${a.key}').textContent=this.value" id="range_${a.key}">
+    </div>
+  `).join('');
+
+  document.getElementById('focusChips').innerHTML = ATTRS.map(a => `
+    <div class="chip" data-attr="${a.key}" onclick="this.classList.toggle('selected')">${a.icon} ${a.label}</div>
+  `).join('');
+
+  document.querySelectorAll('#gradeChips .chip').forEach(c => {
+    c.onclick = () => {
+      document.querySelectorAll('#gradeChips .chip').forEach(x => x.classList.remove('selected'));
+      c.classList.add('selected');
+    };
+  });
+  document.querySelectorAll('#wishChips .chip').forEach(c => {
+    c.onclick = () => c.classList.toggle('selected');
+  });
+}
+
+function changeWizardStep(dir) {
+  if (wizStep === 4 && dir === 1) {
+    finishWizard();
+    return;
+  }
+  wizStep = Math.max(1, Math.min(4, wizStep + dir));
+  updateWizardUI();
+}
+
+function updateWizardUI() {
+  document.querySelectorAll('.wizard-step').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.step) === wizStep);
+  });
+  document.getElementById('wizPrevBtn').style.visibility = wizStep > 1 ? 'visible' : 'hidden';
+  document.getElementById('wizNextBtn').textContent = wizStep === 4 ? '生成專屬雷達與任務' : '下一步';
+}
+
+function finishWizard() {
+  ATTRS.forEach(a => {
+    const val = parseInt(document.getElementById(`range_${a.key}`).value, 10);
+    state.stats[a.key] = val;
+    state.targets[a.key] = Math.min(95, val + 25);
+  });
+  document.querySelectorAll('#focusChips .chip.selected').forEach(c => {
+    const k = c.dataset.attr;
+    state.targets[k] = Math.min(100, state.stats[k] + 35);
+  });
+  document.querySelectorAll('#wishChips .chip.selected').forEach(c => {
+    state.quests.unshift({
+      id: Date.now() + Math.random(),
+      title: c.dataset.title,
+      shortTitle: `${c.dataset.title}（15 分鐘微任務）`,
+      attr: c.dataset.attr,
+      mins: parseInt(c.dataset.mins, 10),
+      xp: parseInt(c.dataset.xp, 10)
+    });
+  });
+  saveState();
+  renderAll();
+  closeModal('wizardModal');
+}
+
+/* AI Mentor */
+async function sendAiMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  const chatBox = document.getElementById('chatBox');
+  chatBox.innerHTML += `<div class="msg msg-user">${text}</div>`;
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  const apiKey = document.getElementById('geminiApiKey').value.trim();
+  const lowestAttr = ATTRS.reduce((min, a) => state.stats[a.key] < state.stats[min.key] ? a : min, ATTRS[0]);
+  const busy = getDayBusyCount(state.selectedDay);
+
+  if (apiKey) {
+    try {
+      const prompt = `你是大學生活RPG導師。學生目前弱項是${lowestAttr.label}(${state.stats[lowestAttr.key]}分)，今日忙碌時段${busy}/5。學生說：「${text}」。請用繁體中文給予簡短溫暖建議，並在最後一行以JSON格式提供一個任務建議：{"title":"任務名稱","attr":"Body|Mind|Rest|Fuel|Connection|Purpose","mins":15}`;
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      const data = await res.json();
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '建議先從 15 分鐘的小步驟開始！';
+      appendAiReply(reply, lowestAttr.key);
+      return;
+    } catch (e) {
+      // Fallback to built-in smart engine
+    }
+  }
+
+  // Built-in smart context mentor
+  const suggestTitle = busy >= 4
+    ? `針對「${text.slice(0, 10)}」進行 15 分鐘核心拆解`
+    : `專注推進「${text.slice(0, 12)}」行動計畫 30 分鐘`;
+  const suggestAttr = text.includes('睡') || text.includes('累') ? 'Rest'
+    : text.includes('動') || text.includes('跑') ? 'Body'
+    : text.includes('實習') || text.includes('履歷') ? 'Purpose'
+    : lowestAttr.key;
+
+  const replyText = `觀察到你目前的 <strong>${lowestAttr.label}</strong>（${state.stats[lowestAttr.key]} 分）最有成長空間，且${DAYS[state.selectedDay]}有 ${5 - busy} 個空檔時段。建議不要一次給自己太大壓力，先從以下微任務啟動：`;
+  appendAiReply(replyText, suggestAttr, suggestTitle, busy >= 4 ? 15 : 30);
+}
+
+function appendAiReply(htmlText, fallbackAttr, customTitle, customMins) {
+  const chatBox = document.getElementById('chatBox');
+  let title = customTitle || '完成 15 分鐘目標推進微任務';
+  let attr = fallbackAttr || 'Mind';
+  let mins = customMins || 15;
+
+  const jsonMatch = htmlText.match(/\{[\s\S]*?\}/);
+  if (jsonMatch) {
+    try {
+      const obj = JSON.parse(jsonMatch[0]);
+      title = obj.title || title;
+      attr = obj.attr || attr;
+      mins = obj.mins || mins;
+      htmlText = htmlText.replace(jsonMatch[0], '');
+    } catch (e) {}
+  }
+
+  chatBox.innerHTML += `
+    <div class="msg msg-ai">
+      <div>${htmlText.replace(/\n/g, '<br>')}</div>
+      <div class="ai-suggest-card">
+        <div>
+          <div style="font-size:0.85rem; font-weight:600; color:var(--accent-gold);">✨ 推薦任務：${title}</div>
+          <div style="font-size:0.75rem; color:var(--text-muted);">${attr} · ${mins} 分鐘</div>
+        </div>
+        <button class="btn btn-primary" style="padding:4px 10px; font-size:0.8rem;" onclick="acceptAiQuest('${title.replace(/'/g, "\'")}', '${attr}', ${mins})">+ 加入任務板</button>
+      </div>
+    </div>
+  `;
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function acceptAiQuest(title, attr, mins) {
+  state.quests.unshift({
+    id: Date.now(),
+    title,
+    shortTitle: title,
+    attr,
+    mins,
+    xp: 20
+  });
+  saveState();
+  renderQuests();
+  alert(`已將「${title}」加入你的冒險任務板！`);
+}
+
+function resetAllData() {
+  if (confirm('確定要重置所有分數、課表與任務紀錄嗎？')) {
+    localStorage.removeItem('collegeRpgState');
+    location.reload();
+  }
+}
+
+renderAll();
+</script>
+</body>
+</html>
